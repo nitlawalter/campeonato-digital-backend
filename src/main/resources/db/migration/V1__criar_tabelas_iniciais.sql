@@ -1,44 +1,64 @@
+-- Tabela de Usuários
+CREATE TABLE usuarios (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de Times
 CREATE TABLE times (
     id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    jogador VARCHAR(100) NOT NULL,
-    emblema VARCHAR(255)
+    nome VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabela de Campeonatos
 CREATE TABLE campeonatos (
     id BIGSERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    data_inicio TIMESTAMP NOT NULL,
-    data_fim TIMESTAMP NOT NULL,
-    numero_grupos INTEGER NOT NULL,
-    times_por_grupo INTEGER NOT NULL,
-    numero_maximo_times INTEGER NOT NULL,
-    status VARCHAR(30) NOT NULL
+    nome VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    data_inicio DATE,
+    data_fim DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabela de Fases
 CREATE TABLE fases (
     id BIGSERIAL PRIMARY KEY,
-    campeonato_id BIGINT NOT NULL REFERENCES campeonatos(id),
-    tipo VARCHAR(20) NOT NULL,
-    numero INTEGER NOT NULL
+    campeonato_id BIGINT REFERENCES campeonatos(id),
+    tipo VARCHAR(50) NOT NULL,
+    ordem INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabela de Partidas
 CREATE TABLE partidas (
     id BIGSERIAL PRIMARY KEY,
-    fase_id BIGINT NOT NULL REFERENCES fases(id),
-    time_casa_id BIGINT NOT NULL REFERENCES times(id),
-    time_visitante_id BIGINT NOT NULL REFERENCES times(id),
-    gols_time_casa INTEGER,
-    gols_time_visitante INTEGER,
-    data_hora TIMESTAMP NOT NULL,
-    status VARCHAR(20) NOT NULL
+    fase_id BIGINT REFERENCES fases(id),
+    time_casa_id BIGINT REFERENCES times(id),
+    time_visitante_id BIGINT REFERENCES times(id),
+    gols_time_casa INT,
+    gols_time_visitante INT,
+    status VARCHAR(50) NOT NULL,
+    data_realizacao TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabela de Inscrições
 CREATE TABLE inscricoes (
     id BIGSERIAL PRIMARY KEY,
-    campeonato_id BIGINT NOT NULL REFERENCES campeonatos(id),
-    time_id BIGINT NOT NULL REFERENCES times(id),
-    data_inscricao TIMESTAMP NOT NULL,
-    aprovada BOOLEAN NOT NULL,
+    campeonato_id BIGINT REFERENCES campeonatos(id),
+    time_id BIGINT REFERENCES times(id),
+    status VARCHAR(50) NOT NULL,
+    data_inscricao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(campeonato_id, time_id)
 ); 

@@ -23,6 +23,10 @@ module com.torneios {
     requires spring.security.crypto;
     requires org.apache.tomcat.embed.core;
     requires jakarta.persistence;
+    requires org.slf4j;
+    requires spring.security.messaging;
+    requires org.hibernate.orm.core;
+    requires spring.aop;
 
     exports com.torneios;
     exports com.torneios.config;
@@ -34,4 +38,13 @@ module com.torneios {
     exports com.torneios.repository;
     exports com.torneios.service;
     exports com.torneios.service.impl;
+
+    opens com.torneios;
+    opens com.torneios.config;
+    opens com.torneios.controller;
+    opens com.torneios.service;
+    opens com.torneios.service.impl;
+    opens com.torneios.model;
+    opens com.torneios.repository;
+    opens com.torneios.dto;
 } 

@@ -1,5 +1,6 @@
 package com.torneios.dto;
 
+import com.torneios.model.enums.TipoMensagem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MensagemDTO {
-    private String tipo;
+    private TipoMensagem tipo;
     private String conteudo;
     private Long campeonatoId;
     private Long timeId;

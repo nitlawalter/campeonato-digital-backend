@@ -118,19 +118,31 @@
             <version>0.11.5</version>
             <scope>runtime</scope>
         </dependency>
+        
+        <!-- Spring Security WebSocket -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-messaging</artifactId>
+        </dependency>
     </dependencies>
     
     <build>
-        <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+        <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.sql</include>
+                </includes>
             </resource>
         </resources>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
+                <filtering>true</filtering>
             </testResource>
         </testResources>
         <plugins>
