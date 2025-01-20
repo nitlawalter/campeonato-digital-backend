@@ -1,10 +1,11 @@
 package com.torneios.service;
 
+import com.torneios.dto.CampeonatoDTO;
 import com.torneios.model.Campeonato;
 import java.util.List;
 
 public interface CampeonatoService {
-    Campeonato criar(Campeonato campeonato);
+    CampeonatoDTO criar(CampeonatoDTO campeonatoDTO);
     Campeonato atualizar(Long id, Campeonato campeonato);
     void deletar(Long id);
     Campeonato buscarPorId(Long id);

@@ -3,7 +3,7 @@ package com.torneios.model;
 import com.torneios.model.enums.StatusCampeonato;
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -18,19 +18,13 @@ public class Campeonato {
     private String nome;
 
     @Column(nullable = false)
-    private LocalDateTime dataInicio;
+    private LocalDate dataInicio;
 
     @Column(nullable = false)
-    private LocalDateTime dataFim;
+    private LocalDate dataFim;
 
     @Column(nullable = false)
-    private Integer numeroGrupos;
-
-    @Column(nullable = false)
-    private Integer timesPorGrupo;
-
-    @Column(nullable = false)
-    private Integer numeroMaximoTimes;
+    private Integer quantidadeMaximaTimes;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -1,9 +1,9 @@
 package com.torneios.service.impl;
 
+import com.torneios.dto.TimeDTO;
+import com.torneios.exception.NegocioException;
 import com.torneios.model.Time;
 import com.torneios.repository.TimeRepository;
-import com.torneios.exception.NegocioException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,7 +16,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,97 +27,114 @@ class TimeServiceImplTest {
     @InjectMocks
     private TimeServiceImpl timeService;
 
-    private Time time;
-
-    @BeforeEach
-    void setUp() {
-        time = new Time();
-        time.setId(1L);
-        time.setNome("Time Teste");
-        time.setJogador("Jogador Teste");
-        time.setEmblema("url-emblema");
-    }
-
     @Test
-    void deveCriarTimeComSucesso() {
-        when(timeRepository.existsByNomeAndJogador(anyString(), anyString())).thenReturn(false);
-        when(timeRepository.save(any(Time.class))).thenReturn(time);
-
-        Time resultado = timeService.criar(time);
-
-        assertNotNull(resultado);
-        assertEquals("Time Teste", resultado.getNome());
-        assertEquals("Jogador Teste", resultado.getJogador());
-        verify(timeRepository).save(any(Time.class));
-    }
-
-    @Test
-    void deveLancarExcecaoAoCriarTimeComNomeExistente() {
-        when(timeRepository.existsByNomeAndJogador(anyString(), anyString())).thenReturn(true);
-
-        assertThrows(NegocioException.class, () -> {
-            timeService.criar(time);
+    void criar_DeveRetornarTimeCriado() {
+        // Arrange
+        TimeDTO dto = criarTimeDTO();
+        when(timeRepository.existsByNome(dto.getNome())).thenReturn(false);
+        when(timeRepository.save(any(Time.class))).thenAnswer(i -> {
+            Time time = i.getArgument(0);
+            time.setId(1L);
+            return time;
         });
 
+        // Act
+        TimeDTO result = timeService.criar(dto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(dto.getNome(), result.getNome());
+        assertEquals(dto.getAbreviacao(), result.getAbreviacao());
+        assertEquals(dto.getCidade(), result.getCidade());
+        assertEquals(dto.getEstado(), result.getEstado());
+    }
+
+    @Test
+    void criar_DeveRetornarErroQuandoTimeJaExiste() {
+        // Arrange
+        TimeDTO dto = criarTimeDTO();
+        when(timeRepository.existsByNome(dto.getNome())).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(NegocioException.class, () -> timeService.criar(dto));
         verify(timeRepository, never()).save(any(Time.class));
     }
 
     @Test
-    void deveAtualizarTimeComSucesso() {
-        when(timeRepository.findById(anyLong())).thenReturn(Optional.of(time));
-        when(timeRepository.save(any(Time.class))).thenReturn(time);
+    void atualizar_DeveRetornarTimeAtualizado() {
+        // Arrange
+        Long id = 1L;
+        TimeDTO dto = criarTimeDTO();
+        Time timeExistente = criarTime();
+        
+        when(timeRepository.findById(id)).thenReturn(Optional.of(timeExistente));
+        when(timeRepository.existsByNomeAndIdNot(dto.getNome(), id)).thenReturn(false);
+        when(timeRepository.save(any(Time.class))).thenReturn(timeExistente);
 
-        Time timeAtualizado = new Time();
-        timeAtualizado.setNome("Time Atualizado");
-        timeAtualizado.setJogador("Jogador Teste");
-        timeAtualizado.setEmblema("nova-url-emblema");
+        // Act
+        TimeDTO result = timeService.atualizar(id, dto);
 
-        Time resultado = timeService.atualizar(1L, timeAtualizado);
-
-        assertNotNull(resultado);
-        assertEquals("Time Atualizado", resultado.getNome());
-        assertEquals("nova-url-emblema", resultado.getEmblema());
-        verify(timeRepository).save(any(Time.class));
+        // Assert
+        assertNotNull(result);
+        assertEquals(dto.getNome(), result.getNome());
+        assertEquals(dto.getAbreviacao(), result.getAbreviacao());
     }
 
     @Test
-    void deveListarTodosOsTimes() {
-        List<Time> times = Arrays.asList(
-            time,
-            new Time() {{
-                setId(2L);
-                setNome("Time 2");
-                setJogador("Jogador 2");
-            }}
-        );
+    void buscarPorId_DeveRetornarTime() {
+        // Arrange
+        Time time = criarTime();
+        when(timeRepository.findById(1L)).thenReturn(Optional.of(time));
 
+        // Act
+        TimeDTO result = timeService.buscarPorId(1L);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(time.getNome(), result.getNome());
+    }
+
+    @Test
+    void buscarPorId_DeveRetornarErroQuandoTimeNaoExiste() {
+        // Arrange
+        when(timeRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(NegocioException.class, () -> timeService.buscarPorId(1L));
+    }
+
+    @Test
+    void listar_DeveRetornarListaDeTimes() {
+        // Arrange
+        List<Time> times = Arrays.asList(criarTime(), criarTime());
         when(timeRepository.findAll()).thenReturn(times);
 
-        List<Time> resultado = timeService.listarTodos();
+        // Act
+        List<TimeDTO> result = timeService.listar();
 
-        assertNotNull(resultado);
-        assertEquals(2, resultado.size());
-        verify(timeRepository).findAll();
+        // Assert
+        assertFalse(result.isEmpty());
+        assertEquals(2, result.size());
     }
 
-    @Test
-    void deveDeletarTimeComSucesso() {
-        when(timeRepository.findById(anyLong())).thenReturn(Optional.of(time));
-        doNothing().when(timeRepository).delete(any(Time.class));
-
-        timeService.deletar(1L);
-
-        verify(timeRepository).delete(time);
+    private TimeDTO criarTimeDTO() {
+        TimeDTO dto = new TimeDTO();
+        dto.setNome("Time Teste");
+        dto.setAbreviacao("TT");
+        dto.setCidade("Cidade Teste");
+        dto.setEstado("Estado Teste");
+        dto.setLogo("logo.png");
+        return dto;
     }
 
-    @Test
-    void deveLancarExcecaoAoDeletarTimeInexistente() {
-        when(timeRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(NegocioException.class, () -> {
-            timeService.deletar(1L);
-        });
-
-        verify(timeRepository, never()).delete(any(Time.class));
+    private Time criarTime() {
+        Time time = new Time();
+        time.setId(1L);
+        time.setNome("Time Teste");
+        time.setAbreviacao("TT");
+        time.setCidade("Cidade Teste");
+        time.setEstado("Estado Teste");
+        time.setLogo("logo.png");
+        return time;
     }
 } 

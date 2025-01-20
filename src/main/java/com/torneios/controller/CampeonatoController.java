@@ -3,6 +3,7 @@ package com.torneios.controller;
 import com.torneios.dto.CampeonatoDTO;
 import com.torneios.dto.ErroDTO;
 import com.torneios.model.Campeonato;
+import com.torneios.model.enums.StatusCampeonato;
 import com.torneios.service.CampeonatoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class CampeonatoController {
 
     private final CampeonatoService campeonatoService;
 
+    @PostMapping
     @Operation(summary = "Criar novo campeonato",
             description = "Cria um novo campeonato com as informações fornecidas")
     @ApiResponses(value = {
@@ -39,18 +41,9 @@ public class CampeonatoController {
         @ApiResponse(responseCode = "401", description = "Não autorizado",
                 content = @Content(schema = @Schema(implementation = ErroDTO.class)))
     })
-    @PostMapping
-    public ResponseEntity<CampeonatoDTO> criar(@Valid @RequestBody CampeonatoDTO dto) {
-        Campeonato campeonato = new Campeonato();
-        campeonato.setNome(dto.getNome());
-        campeonato.setDataInicio(dto.getDataInicio());
-        campeonato.setDataFim(dto.getDataFim());
-        campeonato.setNumeroGrupos(dto.getNumeroGrupos());
-        campeonato.setTimesPorGrupo(dto.getTimesPorGrupo());
-        campeonato.setNumeroMaximoTimes(dto.getNumeroMaximoTimes());
-
-        Campeonato criado = campeonatoService.criar(campeonato);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(criado));
+    public ResponseEntity<CampeonatoDTO> criar(@RequestBody @Valid CampeonatoDTO dto) {
+        CampeonatoDTO campeonatoCriado = campeonatoService.criar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(campeonatoCriado);
     }
 
     @Operation(summary = "Atualizar campeonato", 
@@ -66,9 +59,8 @@ public class CampeonatoController {
         campeonato.setNome(dto.getNome());
         campeonato.setDataInicio(dto.getDataInicio());
         campeonato.setDataFim(dto.getDataFim());
-        campeonato.setNumeroGrupos(dto.getNumeroGrupos());
-        campeonato.setTimesPorGrupo(dto.getTimesPorGrupo());
-        campeonato.setNumeroMaximoTimes(dto.getNumeroMaximoTimes());
+        campeonato.setQuantidadeMaximaTimes(dto.getQuantidadeMaximaTimes());
+        campeonato.setStatus(StatusCampeonato.INSCRICOES_ABERTAS);
 
         Campeonato atualizado = campeonatoService.atualizar(id, campeonato);
         return ResponseEntity.ok(toDTO(atualizado));
@@ -178,9 +170,7 @@ public class CampeonatoController {
         dto.setNome(campeonato.getNome());
         dto.setDataInicio(campeonato.getDataInicio());
         dto.setDataFim(campeonato.getDataFim());
-        dto.setNumeroGrupos(campeonato.getNumeroGrupos());
-        dto.setTimesPorGrupo(campeonato.getTimesPorGrupo());
-        dto.setNumeroMaximoTimes(campeonato.getNumeroMaximoTimes());
+        dto.setQuantidadeMaximaTimes(campeonato.getQuantidadeMaximaTimes());
         dto.setStatus(campeonato.getStatus());
         return dto;
     }

@@ -16,18 +16,71 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/campeonatos/{campeonatoId}/fases")
+@RequestMapping("/api/fases")
 @Tag(name = "Fases", description = "Operações relacionadas a fases do campeonato")
 @SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class FaseController {
 
     private final FaseService faseService;
+
+    @PostMapping
+    @Operation(summary = "Criar uma nova fase")
+    public ResponseEntity<FaseDTO> criar(@RequestBody @Valid FaseDTO faseDTO) {
+        FaseDTO faseCriada = faseService.criar(faseDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(faseCriada);
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar todas as fases")
+    public ResponseEntity<List<FaseDTO>> listar() {
+        return ResponseEntity.ok(faseService.listar());
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar fase por ID")
+    public ResponseEntity<FaseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(faseService.buscarPorId(id));
+    }
+
+    @GetMapping("/campeonato/{campeonatoId}")
+    @Operation(summary = "Listar fases por campeonato")
+    public ResponseEntity<List<FaseDTO>> listarPorCampeonato(@PathVariable Long campeonatoId) {
+        return ResponseEntity.ok(faseService.listarPorCampeonato(campeonatoId));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar uma fase")
+    public ResponseEntity<FaseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid FaseDTO faseDTO) {
+        return ResponseEntity.ok(faseService.atualizar(id, faseDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir uma fase")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        faseService.excluir(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/iniciar")
+    @Operation(summary = "Iniciar uma fase")
+    public ResponseEntity<Void> iniciarFase(@PathVariable Long id) {
+        faseService.iniciarFase(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/finalizar")
+    @Operation(summary = "Finalizar uma fase")
+    public ResponseEntity<Void> finalizarFase(@PathVariable Long id) {
+        faseService.finalizarFase(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @Operation(summary = "Criar fase de grupos",
             description = "Cria a fase inicial de grupos do campeonato")
@@ -41,8 +94,8 @@ public class FaseController {
     })
     @PostMapping("/grupos")
     public ResponseEntity<FaseDTO> criarFaseGrupos(@PathVariable Long campeonatoId) {
-        Fase fase = faseService.criarFaseGrupos(campeonatoId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(fase));
+        FaseDTO faseDto = faseService.criarFaseGrupos(campeonatoId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(faseDto);
     }
 
     @Operation(summary = "Criar próxima fase",
@@ -57,8 +110,8 @@ public class FaseController {
     })
     @PostMapping("/proxima")
     public ResponseEntity<FaseDTO> criarProximaFase(@PathVariable Long campeonatoId) {
-        Fase fase = faseService.criarProximaFase(campeonatoId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(fase));
+        FaseDTO fase = faseService.criarProximaFase(campeonatoId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(fase);
     }
 
     @Operation(summary = "Gerar partidas",
@@ -76,30 +129,15 @@ public class FaseController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Listar fases",
-            description = "Lista todas as fases de um campeonato")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso",
-                content = @Content(array = @ArraySchema(schema = @Schema(implementation = FaseDTO.class)))),
-        @ApiResponse(responseCode = "404", description = "Campeonato não encontrado",
-                content = @Content(schema = @Schema(implementation = ErroDTO.class)))
-    })
-    @GetMapping
-    public ResponseEntity<List<FaseDTO>> listarFases(@PathVariable Long campeonatoId) {
-        List<FaseDTO> fases = faseService.listarPorCampeonato(campeonatoId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(fases);
-    }
-
     private FaseDTO toDTO(Fase fase) {
         FaseDTO dto = new FaseDTO();
         dto.setId(fase.getId());
-        dto.setCampeonatoId(fase.getCampeonato().getId());
+        dto.setNome(fase.getNome());
+        dto.setDataInicio(fase.getDataInicio());
+        dto.setDataFim(fase.getDataFim());
+        dto.setNumeroTimes(fase.getNumeroTimes());
         dto.setTipo(fase.getTipo());
-        dto.setNumero(fase.getNumero());
-        dto.setNomeCampeonato(fase.getCampeonato().getNome());
+        dto.setCampeonatoId(fase.getCampeonato().getId());
         return dto;
     }
 } 

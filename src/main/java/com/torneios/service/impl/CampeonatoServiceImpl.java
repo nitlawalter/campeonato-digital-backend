@@ -1,16 +1,17 @@
 package com.torneios.service.impl;
 
+import com.torneios.dto.CampeonatoDTO;
+import com.torneios.exception.NegocioException;
 import com.torneios.model.Campeonato;
 import com.torneios.model.enums.StatusCampeonato;
 import com.torneios.repository.CampeonatoRepository;
 import com.torneios.repository.InscricaoRepository;
 import com.torneios.service.CampeonatoService;
-import com.torneios.exception.NegocioException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -22,15 +23,21 @@ public class CampeonatoServiceImpl implements CampeonatoService {
 
     @Override
     @Transactional
-    public Campeonato criar(Campeonato campeonato) {
-        validarCampeonato(campeonato);
+    public CampeonatoDTO criar(CampeonatoDTO dto) {
+        validarCampeonato(dto);
         
-        if (campeonatoRepository.existsByNome(campeonato.getNome())) {
+        if (campeonatoRepository.existsByNome(dto.getNome())) {
             throw new NegocioException("Já existe um campeonato com este nome");
         }
 
+        Campeonato campeonato = new Campeonato();
+        campeonato.setNome(dto.getNome());
+        campeonato.setDataInicio(dto.getDataInicio());
+        campeonato.setDataFim(dto.getDataFim());
+        campeonato.setQuantidadeMaximaTimes(dto.getQuantidadeMaximaTimes());
         campeonato.setStatus(StatusCampeonato.CRIADO);
-        return campeonatoRepository.save(campeonato);
+
+        return toDTO(campeonatoRepository.save(campeonato));
     }
 
     @Override
@@ -42,14 +49,12 @@ public class CampeonatoServiceImpl implements CampeonatoService {
             throw new NegocioException("Não é possível alterar um campeonato que já foi iniciado");
         }
 
-        validarCampeonato(campeonato);
+        validarCampeonato(toDTO(campeonato));
         
         campeonatoExistente.setNome(campeonato.getNome());
         campeonatoExistente.setDataInicio(campeonato.getDataInicio());
         campeonatoExistente.setDataFim(campeonato.getDataFim());
-        campeonatoExistente.setNumeroGrupos(campeonato.getNumeroGrupos());
-        campeonatoExistente.setTimesPorGrupo(campeonato.getTimesPorGrupo());
-        campeonatoExistente.setNumeroMaximoTimes(campeonato.getNumeroMaximoTimes());
+        campeonatoExistente.setQuantidadeMaximaTimes(campeonato.getQuantidadeMaximaTimes());
 
         return campeonatoRepository.save(campeonatoExistente);
     }
@@ -100,7 +105,7 @@ public class CampeonatoServiceImpl implements CampeonatoService {
         }
 
         long inscricoesAprovadas = inscricaoRepository.countByCampeonatoAndAprovada(campeonato, true);
-        if (inscricoesAprovadas < campeonato.getNumeroGrupos() * campeonato.getTimesPorGrupo()) {
+        if (inscricoesAprovadas < 2) { // Mínimo de 2 times para um campeonato
             throw new NegocioException("Número mínimo de times não foi atingido");
         }
 
@@ -134,25 +139,28 @@ public class CampeonatoServiceImpl implements CampeonatoService {
         campeonatoRepository.save(campeonato);
     }
 
-    private void validarCampeonato(Campeonato campeonato) {
-        if (campeonato.getDataInicio().isBefore(LocalDateTime.now())) {
+    private void validarCampeonato(CampeonatoDTO dto) {
+        if (dto.getDataInicio().isBefore(LocalDate.now())) {
             throw new NegocioException("Data de início não pode ser anterior à data atual");
         }
         
-        if (campeonato.getDataFim().isBefore(campeonato.getDataInicio())) {
+        if (dto.getDataFim().isBefore(dto.getDataInicio())) {
             throw new NegocioException("Data de fim não pode ser anterior à data de início");
         }
         
-        if (campeonato.getNumeroGrupos() <= 0) {
-            throw new NegocioException("Número de grupos deve ser maior que zero");
+        if (dto.getQuantidadeMaximaTimes() < 2) {
+            throw new NegocioException("Quantidade máxima de times deve ser maior que 1");
         }
-        
-        if (campeonato.getTimesPorGrupo() <= 1) {
-            throw new NegocioException("Número de times por grupo deve ser maior que um");
-        }
-        
-        if (campeonato.getNumeroMaximoTimes() < (campeonato.getNumeroGrupos() * campeonato.getTimesPorGrupo())) {
-            throw new NegocioException("Número máximo de times deve ser maior ou igual ao número de times necessários");
-        }
+    }
+
+    private CampeonatoDTO toDTO(Campeonato campeonato) {
+        CampeonatoDTO dto = new CampeonatoDTO();
+        dto.setId(campeonato.getId());
+        dto.setNome(campeonato.getNome());
+        dto.setDataInicio(campeonato.getDataInicio());
+        dto.setDataFim(campeonato.getDataFim());
+        dto.setQuantidadeMaximaTimes(campeonato.getQuantidadeMaximaTimes());
+        dto.setStatus(campeonato.getStatus());
+        return dto;
     }
 } 

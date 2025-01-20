@@ -5,8 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 public class CampeonatoDTO {
@@ -16,19 +15,14 @@ public class CampeonatoDTO {
     private String nome;
     
     @NotNull(message = "Data de início é obrigatória")
-    private LocalDateTime dataInicio;
+    private LocalDate dataInicio;
     
     @NotNull(message = "Data de fim é obrigatória")
-    private LocalDateTime dataFim;
+    private LocalDate dataFim;
     
-    @Min(value = 1, message = "Número de grupos deve ser maior que zero")
-    private Integer numeroGrupos;
-    
-    @Min(value = 2, message = "Número de times por grupo deve ser maior que um")
-    private Integer timesPorGrupo;
-    
-    @Min(value = 2, message = "Número máximo de times deve ser maior que um")
-    private Integer numeroMaximoTimes;
+    @NotNull(message = "Quantidade máxima de times é obrigatória")
+    @Min(value = 2, message = "Quantidade mínima de times é 2")
+    private Integer quantidadeMaximaTimes;
     
     private StatusCampeonato status;
 } 

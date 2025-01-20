@@ -1,12 +1,12 @@
 package com.torneios.service;
 
-import com.torneios.model.Time;
+import com.torneios.dto.TimeDTO;
 import java.util.List;
 
 public interface TimeService {
-    Time criar(Time time);
-    Time atualizar(Long id, Time time);
-    void deletar(Long id);
-    Time buscarPorId(Long id);
-    List<Time> listarTodos();
+    TimeDTO criar(TimeDTO timeDTO);
+    TimeDTO atualizar(Long id, TimeDTO timeDTO);
+    void excluir(Long id);
+    TimeDTO buscarPorId(Long id);
+    List<TimeDTO> listar();
 } 

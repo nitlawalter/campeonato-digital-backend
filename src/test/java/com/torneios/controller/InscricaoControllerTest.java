@@ -1,98 +1,119 @@
 package com.torneios.controller;
 
-import com.torneios.model.Campeonato;
-import com.torneios.model.Inscricao;
-import com.torneios.model.Time;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.torneios.config.SecurityTestConfig;
+import com.torneios.dto.InscricaoDTO;
+import com.torneios.dto.TimeDTO;
 import com.torneios.service.InscricaoService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(InscricaoController.class)
+@Import(SecurityTestConfig.class)
 class InscricaoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockBean
     private InscricaoService inscricaoService;
 
-    private Inscricao inscricao;
-    private Campeonato campeonato;
-    private Time time;
-
-    @BeforeEach
-    void setUp() {
-        campeonato = new Campeonato();
-        campeonato.setId(1L);
-        campeonato.setNome("Campeonato Teste");
-
-        time = new Time();
-        time.setId(1L);
-        time.setNome("Time Teste");
-        time.setJogador("Jogador Teste");
-
-        inscricao = new Inscricao();
-        inscricao.setId(1L);
-        inscricao.setCampeonato(campeonato);
-        inscricao.setTime(time);
-        inscricao.setDataInscricao(LocalDateTime.now());
-        inscricao.setAprovada(false);
-    }
-
     @Test
-    void deveInscreverTimeComSucesso() throws Exception {
-        when(inscricaoService.inscrever(anyLong(), anyLong())).thenReturn(inscricao);
+    @WithMockUser
+    void criar_DeveRetornarInscricaoCriada() throws Exception {
+        // Arrange
+        InscricaoDTO dto = criarInscricaoDTO();
+        when(inscricaoService.inscrever(eq(1L), eq(dto.getTimeId()))).thenReturn(dto);
 
+        // Act & Assert
         mockMvc.perform(post("/api/campeonatos/1/inscricoes")
-                .param("timeId", "1")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.timeId").value(1L))
-                .andExpect(jsonPath("$.campeonatoId").value(1L))
-                .andExpect(jsonPath("$.aprovada").value(false));
+                .andExpect(jsonPath("$.timeId").value(dto.getTimeId()))
+                .andExpect(jsonPath("$.campeonatoId").value(dto.getCampeonatoId()))
+                .andExpect(jsonPath("$.aprovada").value(dto.isAprovada()));
     }
 
     @Test
-    void deveAprovarInscricaoComSucesso() throws Exception {
+    @WithMockUser
+    void aprovar_DeveRetornarNoContent() throws Exception {
         mockMvc.perform(post("/api/campeonatos/1/inscricoes/1/aprovar"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void deveListarInscricoesComSucesso() throws Exception {
-        when(inscricaoService.listarPorCampeonato(anyLong())).thenReturn(Arrays.asList(inscricao));
-
-        mockMvc.perform(get("/api/campeonatos/1/inscricoes"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].timeId").value(1L))
-                .andExpect(jsonPath("$[0].campeonatoId").value(1L))
-                .andExpect(jsonPath("$[0].nomeTime").value("Time Teste"))
-                .andExpect(jsonPath("$[0].nomeCampeonato").value("Campeonato Teste"));
+    @WithMockUser
+    void reprovar_DeveRetornarNoContent() throws Exception {
+        mockMvc.perform(post("/api/campeonatos/1/inscricoes/1/reprovar"))
+                .andExpect(status().isNoContent());
     }
 
     @Test
-    void deveListarInscricoesAprovadasComSucesso() throws Exception {
-        inscricao.setAprovada(true);
-        when(inscricaoService.listarInscricoesAprovadas(anyLong())).thenReturn(Arrays.asList(inscricao));
+    @WithMockUser
+    void listarInscricoes_DeveRetornarListaDeInscricoes() throws Exception {
+        // Arrange
+        List<InscricaoDTO> inscricoes = Arrays.asList(criarInscricaoDTO(), criarInscricaoDTO());
+        when(inscricaoService.listarPorCampeonato(1L)).thenReturn(inscricoes);
 
+        // Act & Assert
+        mockMvc.perform(get("/api/campeonatos/1/inscricoes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].timeId").value(inscricoes.get(0).getTimeId()))
+                .andExpect(jsonPath("$[1].timeId").value(inscricoes.get(1).getTimeId()));
+    }
+
+    @Test
+    @WithMockUser
+    void listarInscricoesAprovadas_DeveRetornarListaDeInscricoesAprovadas() throws Exception {
+        // Arrange
+        List<InscricaoDTO> inscricoes = Arrays.asList(criarInscricaoDTO(), criarInscricaoDTO());
+        when(inscricaoService.listarInscricoesAprovadas(1L)).thenReturn(inscricoes);
+
+        // Act & Assert
         mockMvc.perform(get("/api/campeonatos/1/inscricoes/aprovadas"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].aprovada").value(true));
+                .andExpect(jsonPath("$[0].timeId").value(inscricoes.get(0).getTimeId()))
+                .andExpect(jsonPath("$[1].timeId").value(inscricoes.get(1).getTimeId()));
+    }
+
+    private InscricaoDTO criarInscricaoDTO() {
+        InscricaoDTO dto = new InscricaoDTO();
+        dto.setId(1L);
+        dto.setTimeId(1L);
+        dto.setCampeonatoId(1L);
+        dto.setDataInscricao(LocalDateTime.now());
+        dto.setAprovada(false);
+        dto.setNomeCampeonato("Campeonato Teste");
+        dto.setNomeTime("Time Teste");
+        
+        TimeDTO timeDTO = new TimeDTO();
+        timeDTO.setId(1L);
+        timeDTO.setNome("Time Teste");
+        timeDTO.setAbreviacao("TT");
+        timeDTO.setCidade("Cidade Teste");
+        timeDTO.setEstado("Estado Teste");
+        dto.setTime(timeDTO);
+        
+        return dto;
     }
 } 

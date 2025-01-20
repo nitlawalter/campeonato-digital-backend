@@ -15,8 +15,14 @@ public class Time {
     private String nome;
 
     @Column(nullable = false)
-    private String jogador;
+    private String abreviacao;
+
+    @Column(nullable = false)
+    private String cidade;
+
+    @Column(nullable = false)
+    private String estado;
 
     @Column
-    private String emblema;
+    private String logo;
 } 

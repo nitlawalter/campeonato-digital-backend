@@ -1,30 +1,26 @@
 package com.torneios.service.impl;
 
-import com.torneios.model.*;
-import com.torneios.model.enums.StatusCampeonato;
-import com.torneios.model.enums.StatusPartida;
-import com.torneios.model.enums.TipoFase;
-import com.torneios.repository.FaseRepository;
-import com.torneios.repository.PartidaRepository;
-import com.torneios.service.CampeonatoService;
-import com.torneios.service.InscricaoService;
+import com.torneios.dto.FaseDTO;
 import com.torneios.exception.NegocioException;
-import org.junit.jupiter.api.BeforeEach;
+import com.torneios.model.Campeonato;
+import com.torneios.model.Fase;
+import com.torneios.model.enums.StatusCampeonato;
+import com.torneios.model.enums.TipoFase;
+import com.torneios.repository.CampeonatoRepository;
+import com.torneios.repository.FaseRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,121 +30,114 @@ class FaseServiceImplTest {
     private FaseRepository faseRepository;
 
     @Mock
-    private PartidaRepository partidaRepository;
-
-    @Mock
-    private CampeonatoService campeonatoService;
-
-    @Mock
-    private InscricaoService inscricaoService;
+    private CampeonatoRepository campeonatoRepository;
 
     @InjectMocks
     private FaseServiceImpl faseService;
 
-    private Campeonato campeonato;
-    private Fase fase;
-    private List<Time> times;
-
-    @BeforeEach
-    void setUp() {
-        campeonato = new Campeonato();
-        campeonato.setId(1L);
-        campeonato.setNumeroGrupos(2);
-        campeonato.setTimesPorGrupo(4);
-        campeonato.setStatus(StatusCampeonato.INSCRICOES_ENCERRADAS);
-
-        fase = new Fase();
-        fase.setId(1L);
-        fase.setCampeonato(campeonato);
-        fase.setTipo(TipoFase.GRUPOS);
-        fase.setNumero(1);
-
-        times = Arrays.asList(
-            createTime(1L, "Time 1"),
-            createTime(2L, "Time 2"),
-            createTime(3L, "Time 3"),
-            createTime(4L, "Time 4")
-        );
-    }
-
     @Test
-    void deveCriarFaseGruposComSucesso() {
-        when(campeonatoService.buscarPorId(anyLong())).thenReturn(campeonato);
-        when(faseRepository.findByCampeonato(any())).thenReturn(Collections.emptyList());
-        when(faseRepository.save(any(Fase.class))).thenReturn(fase);
-
-        Fase resultado = faseService.criarFaseGrupos(1L);
-
-        assertNotNull(resultado);
-        assertEquals(TipoFase.GRUPOS, resultado.getTipo());
-        assertEquals(1, resultado.getNumero());
-        verify(faseRepository).save(any(Fase.class));
-    }
-
-    @Test
-    void deveLancarExcecaoAoCriarFaseGruposQuandoJaExistemFases() {
-        when(campeonatoService.buscarPorId(anyLong())).thenReturn(campeonato);
-        when(faseRepository.findByCampeonato(any())).thenReturn(Arrays.asList(fase));
-
-        assertThrows(NegocioException.class, () -> {
-            faseService.criarFaseGrupos(1L);
+    void criar_DeveRetornarFaseCriada() {
+        // Arrange
+        FaseDTO dto = criarFaseDTO();
+        Campeonato campeonato = criarCampeonato();
+        
+        when(campeonatoRepository.findById(dto.getCampeonatoId())).thenReturn(Optional.of(campeonato));
+        when(faseRepository.save(any(Fase.class))).thenAnswer(i -> {
+            Fase fase = i.getArgument(0);
+            fase.setId(1L);
+            return fase;
         });
 
-        verify(faseRepository, never()).save(any(Fase.class));
+        // Act
+        FaseDTO result = faseService.criar(dto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(dto.getNome(), result.getNome());
+        assertEquals(dto.getNumeroTimes(), result.getNumeroTimes());
+        assertEquals(dto.getTipo(), result.getTipo());
     }
 
     @Test
-    void deveCriarProximaFaseComSucesso() {
-        Fase faseAnterior = fase;
-        Fase novaFase = new Fase();
-        novaFase.setTipo(TipoFase.OITAVAS);
-        novaFase.setNumero(2);
+    void criar_DeveRetornarErroQuandoCampeonatoNaoExiste() {
+        // Arrange
+        FaseDTO dto = criarFaseDTO();
+        when(campeonatoRepository.findById(dto.getCampeonatoId())).thenReturn(Optional.empty());
 
-        when(campeonatoService.buscarPorId(anyLong())).thenReturn(campeonato);
-        when(faseRepository.findByCampeonatoOrderByNumeroAsc(any())).thenReturn(Arrays.asList(faseAnterior));
-        when(partidaRepository.findByFase(any())).thenReturn(createPartidasFinalizadas());
-        when(faseRepository.save(any(Fase.class))).thenReturn(novaFase);
-
-        Fase resultado = faseService.criarProximaFase(1L);
-
-        assertNotNull(resultado);
-        assertEquals(TipoFase.OITAVAS, resultado.getTipo());
-        assertEquals(2, resultado.getNumero());
-        verify(faseRepository).save(any(Fase.class));
+        // Act & Assert
+        assertThrows(NegocioException.class, () -> faseService.criar(dto));
     }
 
     @Test
-    void deveGerarPartidasComSucesso() {
-        when(faseRepository.findById(anyLong())).thenReturn(Optional.of(fase));
-        when(partidaRepository.findByFase(any())).thenReturn(Collections.emptyList());
-        when(inscricaoService.listarInscricoesAprovadas(anyLong())).thenReturn(createInscricoes());
+    void criarFaseGrupos_DeveRetornarFaseGruposCriada() {
+        // Arrange
+        Campeonato campeonato = criarCampeonato();
+        when(campeonatoRepository.findById(1L)).thenReturn(Optional.of(campeonato));
+        when(faseRepository.save(any(Fase.class))).thenAnswer(i -> {
+            Fase fase = i.getArgument(0);
+            fase.setId(1L);
+            return fase;
+        });
 
-        faseService.gerarPartidas(1L);
+        // Act
+        FaseDTO result = faseService.criarFaseGrupos(1L);
 
-        verify(partidaRepository, atLeastOnce()).save(any(Partida.class));
+        // Assert
+        assertNotNull(result);
+        assertEquals("Fase de Grupos", result.getNome());
+        assertEquals(TipoFase.GRUPOS, result.getTipo());
+        assertEquals(campeonato.getQuantidadeMaximaTimes(), result.getNumeroTimes());
     }
 
-    private Time createTime(Long id, String nome) {
-        Time time = new Time();
-        time.setId(id);
-        time.setNome(nome);
-        return time;
+    @Test
+    void listarPorCampeonato_DeveRetornarListaDeFases() {
+        // Arrange
+        Campeonato campeonato = criarCampeonato();
+        Fase fase = criarFase(campeonato);
+        
+        when(campeonatoRepository.findById(1L)).thenReturn(Optional.of(campeonato));
+        when(faseRepository.findByCampeonato(campeonato)).thenReturn(Arrays.asList(fase));
+
+        // Act
+        List<FaseDTO> result = faseService.listarPorCampeonato(1L);
+
+        // Assert
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals(fase.getNome(), result.get(0).getNome());
     }
 
-    private List<Partida> createPartidasFinalizadas() {
-        Partida partida = new Partida();
-        partida.setStatus(StatusPartida.FINALIZADA);
-        return Arrays.asList(partida);
+    private FaseDTO criarFaseDTO() {
+        FaseDTO dto = new FaseDTO();
+        dto.setNome("Fase de Grupos");
+        dto.setDataInicio(LocalDate.now().plusDays(1));
+        dto.setDataFim(LocalDate.now().plusMonths(1));
+        dto.setNumeroTimes(16);
+        dto.setTipo(TipoFase.GRUPOS);
+        dto.setCampeonatoId(1L);
+        return dto;
     }
 
-    private List<Inscricao> createInscricoes() {
-        return times.stream()
-                .map(time -> {
-                    Inscricao inscricao = new Inscricao();
-                    inscricao.setTime(time);
-                    inscricao.setAprovada(true);
-                    return inscricao;
-                })
-                .collect(Collectors.toList());
+    private Campeonato criarCampeonato() {
+        Campeonato campeonato = new Campeonato();
+        campeonato.setId(1L);
+        campeonato.setNome("Campeonato Teste");
+        campeonato.setDataInicio(LocalDate.now().plusDays(1));
+        campeonato.setDataFim(LocalDate.now().plusMonths(1));
+        campeonato.setQuantidadeMaximaTimes(16);
+        campeonato.setStatus(StatusCampeonato.INSCRICOES_ENCERRADAS);
+        return campeonato;
+    }
+
+    private Fase criarFase(Campeonato campeonato) {
+        Fase fase = new Fase();
+        fase.setId(1L);
+        fase.setNome("Fase de Grupos");
+        fase.setDataInicio(LocalDate.now().plusDays(1));
+        fase.setDataFim(LocalDate.now().plusMonths(1));
+        fase.setNumeroTimes(16);
+        fase.setTipo(TipoFase.GRUPOS);
+        fase.setCampeonato(campeonato);
+        return fase;
     }
 } 

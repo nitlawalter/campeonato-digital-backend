@@ -7,11 +7,17 @@ import lombok.Data;
 public class TimeDTO {
     private Long id;
     
-    @NotBlank(message = "Nome do time é obrigatório")
+    @NotBlank(message = "Nome é obrigatório")
     private String nome;
     
-    @NotBlank(message = "Nome do jogador é obrigatório")
-    private String jogador;
+    @NotBlank(message = "Abreviação é obrigatória")
+    private String abreviacao;
     
-    private String emblema;
+    @NotBlank(message = "Cidade é obrigatória")
+    private String cidade;
+    
+    @NotBlank(message = "Estado é obrigatório")
+    private String estado;
+    
+    private String logo;
 } 

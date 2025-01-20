@@ -6,10 +6,11 @@ import java.time.LocalDateTime;
 @Data
 public class InscricaoDTO {
     private Long id;
-    private Long campeonatoId;
     private Long timeId;
+    private Long campeonatoId;
     private LocalDateTime dataInscricao;
-    private Boolean aprovada;
+    private boolean aprovada;
+    private TimeDTO time;
     private String nomeCampeonato;
     private String nomeTime;
     private String nomeJogador;
